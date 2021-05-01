@@ -24,7 +24,6 @@ nltk.download('wordnet')
 from nltk.stem.wordnet import WordNetLemmatizer
 import string
 from textblob.classifiers import NaiveBayesClassifier
-from decimal import Decimal
 
 #create a list of users(maybe ~20, and have the classifer run on each user)
 twitterUsers = [ 
@@ -46,9 +45,7 @@ usersList = []
 negativeTraining = []
 positiveTraining = []
 neutralTraining = []
-sanitizedNegative = []
-sanitizedPositive = []
-sanitizedNeutral = []
+sanitized = []
 sanitizedTest = []
 stop = set(stopwords.words('english')) 
 exclude = set(string.punctuation) 
@@ -95,37 +92,42 @@ def trainModel():
     parseTrainingCSV()
     trainingSetPreprocessor(negativeTraining, "negative") 
     trainingSetPreprocessor(positiveTraining, "positive")
-    trainingSetPreprocessor(neutralTraining, "neutral")
-    parseTestCSV()
+    #trainingSetPreprocessor(neutralTraining, "neutral")
+    userTweets = parseTestCSV()
+    classifier(userTweets)
     #testSetPreprocessor()
 
 def parseTrainingCSV():
     #opening the stanford CSV file
     with open('stanford.csv', mode ='r',encoding="utf-8")as file:
         csvFile = csv.reader(file)
+        negative = 0
+        positive = 0
         for lines in csvFile:
             try:
-                print(lines[0])
-                if lines[0] == "0":
+                #need to import this correctly
+                if lines[0] == "0" and negative < 100:
                     negativeTraining.append(lines[5])
+                    negative = negative + 1
                 if lines[0] == "2":
                     neutralTraining.append(lines[5])
-                if lines[0] == "4":
+                if lines[0] == "4" and positive < 100:
                     positiveTraining.append(lines[5])
+                    positive = positive + 1
             except Exception as e: print(e)
 
 
 def parseTestCSV():
+    userTweets = []
     entries = os.listdir('/home/matt/Desktop/BigDataProj/BigDataProj/TestCorpuses')
     for tweets in entries:
         with open('/home/matt/Desktop/BigDataProj/BigDataProj/TestCorpuses/'+tweets, mode= 'r', encoding="utf-8")as file:
             csvFile = csv.reader(file)
-            userTweets = []
             for lines in csvFile:
                 try:
-                    userTweets.append(lines[0])
+                    userTweets.append((lines[0], tweets))
                 except Exception as e: print(e)
-    usersList.append(userTweets)
+    return userTweets
 
 def clean(temp):
     stop_free = " ".join([i for i in temp.lower().split() if i not in stop if i not in negative])
@@ -142,15 +144,39 @@ def trainingSetPreprocessor(corpus, sentiment):
     for tweet in corpus:
         temp_actual = TextBlob(tweet.replace("\n" , " "))
         temp = clean(temp_actual)
-        words = temp.split()
-        for word in words:
-            if sentiment == "negative":
-                sanitizedNegative.append(word)
-            elif sentiment == "positive":
-                sanitizedPositive.append(word)
-            else:
-                sanitizedNeutral.append(word)
-            
+        #words = temp.split()
+        #for word in words:
+        if sentiment == "negative":
+            sanitized.append((temp, "negative"))
+        elif sentiment == "positive":
+            sanitized.append((temp, "positive"))
+     #   else:
+      #      sanitizedNeutral.append(temp)
+
+#def testSetPreprocessor(corpus):
+    #todo sanitize test data before classification
+ #   pattern = re.compile(',')
+  #  space_re = re.compile(r'\s+')
+   # for tweet in corpus:
+    #     temp_actual = TextBlob(tweet.replace("\n" , " "))
+     #    temp = clean(temp_actual)
+    
+
+
+
+
+
+
+def classifier(userTweets):
+     global sanitizedPositive
+     global sanitizedNegative
+     global sanitizedTest
+     cl = NaiveBayesClassifier(sanitized)
+     for tweet in userTweets:
+         user = tweet[1]
+         comment = tweet[0]
+         print("\nTweet by " + user + ": " + comment + "\n" + "classified as: " +  cl.classify(comment))
+
 
         
 def visualizer():
