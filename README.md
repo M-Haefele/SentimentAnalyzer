@@ -1,1 +1,2 @@
-# SentimentAnalyzer
+# BigDataProj
+Sentiment Analysis of Tweets
