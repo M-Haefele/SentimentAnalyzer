@@ -27,16 +27,18 @@ from textblob.classifiers import NaiveBayesClassifier
 
 #create a list of users(maybe ~20, and have the classifer run on each user)
 twitterUsers = [ 
-    '@nprpolitics', 
-    '@donnabrazile',
-    '@politifact',
-    '@AOC',
-    '@mtgreenee', 
-    '@SenSanders', 
-    '@GovRonDeSantis', 
-    '@CNN',
-    '@BBC',
-    '@FoxNews']
+    '@Osidehamed96',
+    '@sreyb_',
+#    '@donnabrazile',
+ #   '@politifact',
+  #  '@AOC',
+   # '@mtgreenee', 
+   # '@SenSanders', 
+   # '@GovRonDeSantis', 
+   # '@CNN',
+   # '@BBC',
+   # '@FoxNews'
+]
 
 #global parameters for model
 
@@ -86,7 +88,7 @@ def generateUserCorpus(user, tweetcount, api):
             tweets.append(individual_tweet)    
         csv_columns = list(columns)
         df = pd.DataFrame(tweets, columns=csv_columns)
-        df.to_csv(r'~/Desktop/BigDataProj/BigDataProj/TestCorpuses/'+user+'.csv', index = False)
+        df.to_csv(r'/home/matt/SentimentAnalyzer/TestCorpuses/'+user+'.csv', index = False)
     
 def trainModel():
     parseTrainingCSV()
@@ -119,9 +121,9 @@ def parseTrainingCSV():
 
 def parseTestCSV():
     userTweets = []
-    entries = os.listdir('/home/matt/Desktop/BigDataProj/BigDataProj/TestCorpuses')
+    entries = os.listdir('/home/matt/SentimentAnalyzer/TestCorpuses')
     for tweets in entries:
-        with open('/home/matt/Desktop/BigDataProj/BigDataProj/TestCorpuses/'+tweets, mode= 'r', encoding="utf-8")as file:
+        with open('/home/matt/SentimentAnalyzer/TestCorpuses/'+tweets, mode= 'r', encoding="utf-8")as file:
             csvFile = csv.reader(file)
             for lines in csvFile:
                 try:
@@ -137,8 +139,7 @@ def clean(temp):
 
 
 def trainingSetPreprocessor(corpus, sentiment):
-    global sanitizedNegative
-    global sanitizedPositive
+    global sanitized
     pattern = re.compile(',')
     space_re = re.compile(r'\s+')
     for tweet in corpus:
@@ -168,9 +169,7 @@ def trainingSetPreprocessor(corpus, sentiment):
 
 
 def classifier(userTweets):
-     global sanitizedPositive
-     global sanitizedNegative
-     global sanitizedTest
+     global sanitized
      cl = NaiveBayesClassifier(sanitized)
      for tweet in userTweets:
          user = tweet[1]
@@ -214,7 +213,7 @@ def visualizer():
 
 
 if __name__ == "__main__":
-    #api = connectToTweepy()
-    #generateUserCorpus(twitterUsers, sys.argv[1], api)
+    api = connectToTweepy()
+    generateUserCorpus(twitterUsers, sys.argv[1], api)
     trainModel()
     #visualizer()                                                  
