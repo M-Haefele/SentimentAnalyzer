@@ -27,17 +27,15 @@ from textblob.classifiers import NaiveBayesClassifier
 
 #create a list of users(maybe ~20, and have the classifer run on each user)
 twitterUsers = [ 
-    '@Osidehamed96',
-    '@sreyb_',
-#    '@donnabrazile',
- #   '@politifact',
-  #  '@AOC',
-   # '@mtgreenee', 
-   # '@SenSanders', 
-   # '@GovRonDeSantis', 
-   # '@CNN',
-   # '@BBC',
-   # '@FoxNews'
+    '@donnabrazile',
+    '@politifact',
+    '@AOC',
+    '@mtgreenee', 
+    '@SenSanders', 
+    '@GovRonDeSantis', 
+    '@CNN',
+    '@BBC',
+    '@FoxNews'
 ]
 
 #global parameters for model
@@ -96,8 +94,9 @@ def trainModel():
     trainingSetPreprocessor(positiveTraining, "positive")
     #trainingSetPreprocessor(neutralTraining, "neutral")
     userTweets = parseTestCSV()
-    classifier(userTweets)
-    #testSetPreprocessor()
+    testSetPreprocessor(userTweets)
+    print(sanitizedTest)
+    classifier(sanitizedTest)
 
 def parseTrainingCSV():
     #opening the stanford CSV file
@@ -108,12 +107,12 @@ def parseTrainingCSV():
         for lines in csvFile:
             try:
                 #need to import this correctly
-                if lines[0] == "0" and negative < 100:
+                if lines[0] == "0" and negative < 1000:
                     negativeTraining.append(lines[5])
                     negative = negative + 1
                 if lines[0] == "2":
                     neutralTraining.append(lines[5])
-                if lines[0] == "4" and positive < 100:
+                if lines[0] == "4" and positive < 1000:
                     positiveTraining.append(lines[5])
                     positive = positive + 1
             except Exception as e: print(e)
@@ -122,12 +121,12 @@ def parseTrainingCSV():
 def parseTestCSV():
     userTweets = []
     entries = os.listdir('/home/matt/SentimentAnalyzer/TestCorpuses')
-    for tweets in entries:
-        with open('/home/matt/SentimentAnalyzer/TestCorpuses/'+tweets, mode= 'r', encoding="utf-8")as file:
+    for users in entries:
+        with open('/home/matt/SentimentAnalyzer/TestCorpuses/'+users, mode= 'r', encoding="utf-8")as file:
             csvFile = csv.reader(file)
             for lines in csvFile:
                 try:
-                    userTweets.append((lines[0], tweets))
+                    userTweets.append((lines[0], users[:-4]))#truncates .csv off user name
                 except Exception as e: print(e)
     return userTweets
 
@@ -154,29 +153,37 @@ def trainingSetPreprocessor(corpus, sentiment):
      #   else:
       #      sanitizedNeutral.append(temp)
 
-#def testSetPreprocessor(corpus):
+def testSetPreprocessor(corpus):
     #todo sanitize test data before classification
- #   pattern = re.compile(',')
-  #  space_re = re.compile(r'\s+')
-   # for tweet in corpus:
-    #     temp_actual = TextBlob(tweet.replace("\n" , " "))
-     #    temp = clean(temp_actual)
-    
-
-
-
-
-
+    pattern = re.compile(',')
+    space_re = re.compile(r'\s+')
+    for tweet in corpus:
+        temp_actual = TextBlob(tweet[0].replace("\n" , " "))
+        temp = clean(temp_actual)
+        sanitizedTest.append((temp, tweet[1]))   
 
 def classifier(userTweets):
-     global sanitized
-     cl = NaiveBayesClassifier(sanitized)
-     for tweet in userTweets:
-         user = tweet[1]
-         comment = tweet[0]
-         print("\nTweet by " + user + ": " + comment + "\n" + "classified as: " +  cl.classify(comment))
-
-
+    global sanitized
+    cl = NaiveBayesClassifier(sanitized)
+    #each twitter corpus is its own index in larger list?
+    # for user in list
+    #for tweet in user
+    negativeFreq = 0
+    positiveFreq = 0
+    #right now this is controlled for a user tweet sample of 100 tweets
+    for tweet in userTweets:
+        currentUser = tweet[1]
+        thisUser = currentUser
+        comment = tweet[0]
+        if cl.classify(comment) == "negative":
+             negativeFreq = negativeFreq + 1
+        else:
+             positiveFreq = positiveFreq + 1 
+        print(positiveFreq)
+        print(float(negativeFreq + positiveFreq))
+        userScore = positiveFreq/ float((negativeFreq + positiveFreq))
+        print(currentUser + "'s aggregate sentiment score is: " + str(userScore))
+        classifiedUsers.append((userScore, currentUser))
         
 def visualizer():
      #tweet averages from test set
@@ -213,7 +220,7 @@ def visualizer():
 
 
 if __name__ == "__main__":
-    api = connectToTweepy()
-    generateUserCorpus(twitterUsers, sys.argv[1], api)
+   # api = connectToTweepy()
+   # generateUserCorpus(twitterUsers, sys.argv[1], api)
     trainModel()
     #visualizer()                                                  
