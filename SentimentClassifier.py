@@ -170,57 +170,44 @@ def classifier(userTweets):
     #for tweet in user
     negativeFreq = 0
     positiveFreq = 0
+    tweetCount = 1
     #right now this is controlled for a user tweet sample of 100 tweets
     for tweet in userTweets:
         currentUser = tweet[1]
-        thisUser = currentUser
         comment = tweet[0]
         if cl.classify(comment) == "negative":
              negativeFreq = negativeFreq + 1
         else:
              positiveFreq = positiveFreq + 1 
         print(positiveFreq)
+        tweetCount = tweetCount + 1
         print(float(negativeFreq + positiveFreq))
         userScore = positiveFreq/ float((negativeFreq + positiveFreq))
         print(currentUser + "'s aggregate sentiment score is: " + str(userScore))
-        classifiedUsers.append((userScore, currentUser))
-        
+        if tweetCount == 100:
+            tweetCount = 1
+            positiveFreq = 0
+            negativeFreq = 0 
+            classifiedUsers.append((userScore, currentUser))
+            print("created user cluster")
+    print(classifiedUsers)
+    
+
 def visualizer():
-     #tweet averages from test set
-     df = pd.read_csv('~/Desktop/BigDataProj/BigDataProj/Pokemon.csv')
-     #tweet averages from test set
-     #format of this data frame is:
-     # df.read(absolutepath to CSV of classified users.csv) with format of each entry as : [ 'user', 'subjectivity', 'sentiment'] ...
-     #df = pd.DataFrame(data, colums = "Twitter User", "Subjectivity", "Sentiment") 
-     #clustering options for tweet quality
-     types = df['Type 1'].isin(['Grass', 'Fire', 'Water'])
-     #might not apply here since we've already pre-parsed tweets into small DF and CSV
-     drop_cols = ['Type 1', 'Type 2', 'Generation', 'Legendary', '#']
-     df = df[types].drop(columns = drop_cols)
-     print(df.head())
-     #trivial k means, template for tweet validity scatter
-     kmeans = KMeans(n_clusters=3, random_state =0)
-     #multivariate clustering, probbaly (sentiment, subjectivity)
-     df['cluster'] = kmeans.fit_predict(df[['Defense', 'Attack']])
-     #centroid generation 
-     centroids = kmeans.cluster_centers_
-     #centroid for validity
-     cen_x = [i[0] for i in centroids]
-     #centroid for distance?
-     cen_y = [i[1] for i in centroids]
-     #data frame clusters accordingly
-     df['cen_x'] = df.cluster.map({0:cen_x[0], 1:cen_x[1], 2:cen_y[2]})
-     df['cen_y'] = df.cluster.map({0:cen_y[0], 2:cen_y[1], 2:cen_y[2]})
-     #map params, each twitter users cluster can be different color and labelled as such
-     colors = ['#DF2020', '#81DF20', '#2095Df']
-     df['c'] = df.cluster.map({0:colors[0], 1:colors[1], 2:colors[2]})
-     plt.scatter(df.Attack, df.Defense, c=df.c, alpha =0.6, s=10)
-     plt.show()
+    #tweet averages from test set
+    column_names = ['sentiment score', 'user']
+    df = pd.DataFrame(classifiedUsers, columns=column_names)
+    #savings aggregate classifier scores for prototyping etc
+    df.to_csv(r'/home/matt/SentimentAnalyzer/TestCorpuses/classifiedUsers.csv', index = False)
+    df = pd.DataFrame(classifiedUsers)
+    print(df) 
+    #clustering options for tweet quality
+    #trivial k means, template for tweet validity scatter
 
 
 
 if __name__ == "__main__":
-   # api = connectToTweepy()
-   # generateUserCorpus(twitterUsers, sys.argv[1], api)
+    api = connectToTweepy()
+    generateUserCorpus(twitterUsers, sys.argv[1], api)
     trainModel()
-    #visualizer()                                                  
+    visualizer()      
