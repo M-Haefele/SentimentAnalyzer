@@ -24,9 +24,13 @@ nltk.download('wordnet')
 from nltk.stem.wordnet import WordNetLemmatizer
 import string
 from textblob.classifiers import NaiveBayesClassifier
+import scipy.stats as st
 
 #create a list of users(maybe ~20, and have the classifer run on each user)
-twitterUsers = [ 
+twitterUsers = [
+    '@BarackObama',
+    '@justinbieber',
+     '@katyperry', 
     '@donnabrazile',
     '@politifact',
     '@AOC',
@@ -87,7 +91,8 @@ def generateUserCorpus(user, tweetcount, api):
         csv_columns = list(columns)
         df = pd.DataFrame(tweets, columns=csv_columns)
         df.to_csv(r'/home/matt/SentimentAnalyzer/TestCorpuses/'+user+'.csv', index = False)
-    
+        print(df)
+
 def trainModel():
     parseTrainingCSV()
     trainingSetPreprocessor(negativeTraining, "negative") 
@@ -107,12 +112,12 @@ def parseTrainingCSV():
         for lines in csvFile:
             try:
                 #need to import this correctly
-                if lines[0] == "0" and negative < 1000:
+                if lines[0] == "0" and negative < 2000:
                     negativeTraining.append(lines[5])
                     negative = negative + 1
                 if lines[0] == "2":
                     neutralTraining.append(lines[5])
-                if lines[0] == "4" and positive < 1000:
+                if lines[0] == "4" and positive < 2000:
                     positiveTraining.append(lines[5])
                     positive = positive + 1
             except Exception as e: print(e)
@@ -179,9 +184,7 @@ def classifier(userTweets):
              negativeFreq = negativeFreq + 1
         else:
              positiveFreq = positiveFreq + 1 
-        print(positiveFreq)
         tweetCount = tweetCount + 1
-        print(float(negativeFreq + positiveFreq))
         userScore = positiveFreq/ float((negativeFreq + positiveFreq))
         print(currentUser + "'s aggregate sentiment score is: " + str(userScore))
         if tweetCount == 100:
@@ -195,19 +198,30 @@ def classifier(userTweets):
 
 def visualizer():
     #tweet averages from test set
-    column_names = ['sentiment score', 'user']
-    df = pd.DataFrame(classifiedUsers, columns=column_names)
+    #column_names = ['SentimentScore', 'user']
+    #df = pd.DataFrame(classifiedUsers, columns=column_names)
     #savings aggregate classifier scores for prototyping etc
-    df.to_csv(r'/home/matt/SentimentAnalyzer/TestCorpuses/classifiedUsers.csv', index = False)
-    df = pd.DataFrame(classifiedUsers)
-    print(df) 
-    #clustering options for tweet quality
-    #trivial k means, template for tweet validity scatter
-
-
+    #df.to_csv(r'/home/matt/SentimentAnalyzer/TestCorpuses/classifiedUsers.csv', index = False)
+    df = pd.read_csv('/home/matt/SentimentAnalyzer/TestCorpuses/bbcsample.csv')
+    #df = pd.DataFrame(classifiedUsers) 
+    print(df)
+    labels = ['Negative sentiment', 'Positive sentiment']
+    x = np.arange(len(labels))
+    news = [ 643, 357]
+    normal_users = [565, 435]
+    width = 0.5
+    fig, ax = plt.subplots()
+    rects1 = ax.bar(x -width/2, news, width, label= 'News and Formal Twitter')
+    rects2 = ax.bar( x + width/2, normal_users, width, label = 'Average Twitter Users')
+    ax.set_ylabel('Classified Frequency')
+    ax.set_title('Comparative Frenquencies of Formal and Informal Twitter Users')
+    ax.set_xticks(x)
+    ax.set_xticklabels(labels)
+    ax.legend()
+    plt.show()
 
 if __name__ == "__main__":
-    api = connectToTweepy()
-    generateUserCorpus(twitterUsers, sys.argv[1], api)
-    trainModel()
+    #api = connectToTweepy()
+    #generateUserCorpus(twitterUsers, sys.argv[1], api)
+    #trainModel()
     visualizer()      
